@@ -9,10 +9,8 @@
 				v-for="(photo, n) in photos"
 				:key="photo.name"
 			>
-				<div :style="backgroundImage(photo.name)">
-					<router-link :to="`/view/${n+1}`" class="d-block h-100">
-						<div :style="backgroundImage(photo.name)" :class="photo.orientation"></div>
-					</router-link>
+				<div>
+					<div :style="backgroundImage(photo.name)" :class="{'show': photo.show}" @click="id = n + 1"></div>
 					<div class="close-photo" @click="reset">&times;</div>
 				</div>
 			</div>
@@ -32,14 +30,14 @@
 			</div>
 			
 			<div
-				v-if="modalBg && this.id > 1"
+				v-if="modalBg && id > 1"
 				@click="prev"
 				class="prev"
 			>
 				&larr;
 			</div>
 			<div
-				v-if="modalBg && this.id < photos.length"
+				v-if="modalBg && id < photos.length"
 				@click="next"
 				class="next"
 			>
@@ -54,16 +52,12 @@ import Photos from '@/photos';
 
 export default {
 	name: "homepage",
-	props: {
-		id: {
-			type: Number
-		}
-	},
 	data () {
 		return {
 			photos: Photos,
 			publicPath: process.env.BASE_URL,
-			modalBg: false
+			modalBg: false,
+			id: 0
 		}
 	},
 	methods: {
@@ -72,24 +66,23 @@ export default {
 		},
 
 		showPhoto (n) {
-			this.reset(false);
-			document.querySelector(`.photo:nth-child(${ n }) > div > a > div`).classList.add('show');
+			if(n < 0) return;
+			this.photos.forEach((photo, i) => photo.show = i == n - 1);
 			this.modalBg = true;
 		},
 
-		reset (resetRouter = true) {
+		reset () {
 			this.modalBg = false;
-			let divs = document.querySelectorAll('.photo div');
-			divs.forEach(div => div.classList.remove('show'));
-			if(resetRouter) this.$router.push({path: '/'});
+			this.photos.forEach(photo => photo.show = false);
+			this.id = 0;
 		},
 
 		prev () {
-			if(this.id > 0) this.$router.push({path: `/view/${ this.id - 1 }`});
+			if(this.id > 0) --this.id;
 		},
 
 		next () {
-			if(this.id < this.photos.length) this.$router.push({path: `/view/${ this.id + 1 }`});
+			if(this.id < this.photos.length) ++this.id;
 		}
 	},
 	watch: {
@@ -102,8 +95,12 @@ export default {
 
 		if(this.id && this.id < this.photos.length + 1) this.showPhoto(this.id);
 
-		document.addEventListener('keyup', (e) => {
-			if(e.keyCode == 27) this.reset()
+		document.addEventListener('keydown', (e) => {
+			console.log(e.code);
+			if(!this.modalBg) return;
+			if(e.code == 'Escape') this.reset();
+			if(e.code == 'ArrowLeft' && this.id > 0) --this.id;
+			if(e.code == 'ArrowRight' && this.id < this.photos.length) ++this.id;
 		});
 
 		// Detect touch events to navigate through photos
@@ -186,9 +183,7 @@ body {
 		div:not(.close-photo) {
 			transition: opacity 0.2s;
 			@include photo();
-			opacity: 0;
 			&.show {
-				opacity: 1;
 				position: fixed;
 				top: 50px;
 				left: 50px;

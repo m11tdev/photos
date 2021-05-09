@@ -6,5 +6,7 @@ module.exports = {
     runtimeCompiler: true,
 
     // https://cli.vuejs.org/config/#productionsourcemap
-    productionSourceMap: false
+    productionSourceMap: false,
+
+    outputDir: 'docs'
 };
